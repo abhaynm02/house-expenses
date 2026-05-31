@@ -54,7 +54,19 @@ export default function App() {
     if (mErr) console.error('members error:', mErr)
     if (eErr) console.error('expenses error:', eErr)
     if (mData) setMembers(mData)
-    if (eData) setExpenses(eData)
+    if (eData) setExpenses(eData.map(e => ({
+      id:         e.id,
+      paidBy:     e.paid_by,
+      amount:     e.amount,
+      category:   e.category  || '🌿 Other',
+      date:       e.date      || new Date().toISOString().slice(0, 10),
+      note:       e.note      || '',
+      split:      e.split     || [],
+      is_settled: e.is_settled || false,
+      settled_at: e.settled_at,
+      created_by: e.created_by,
+      created_at: e.created_at,
+    })))
     setLoading(false)
   }, [session])
 
