@@ -21,6 +21,36 @@ export function palette(members, name) {
   return PALETTES[Math.max(0, i)]
 }
 
+export const CHART_COLORS = [
+  '#0C447C', '#085041', '#712B13', '#72243E', '#633806',
+  '#3C3489', '#27500A', '#444441', '#1D9E75', '#B4530A',
+  '#A23B5C', '#6B4EFF', '#0E7C86', '#185FA5',
+]
+
+export function categoryColor(category) {
+  const i = CATEGORIES.indexOf(category)
+  return CHART_COLORS[(i < 0 ? 0 : i) % CHART_COLORS.length]
+}
+
+export function categoryBreakdown(expenses) {
+  const map = {}
+  expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + e.amount })
+  const total = expenses.reduce((s, e) => s + e.amount, 0)
+  return Object.entries(map)
+    .map(([category, amount]) => ({ category, amount, pct: total ? amount / total * 100 : 0 }))
+    .sort((a, b) => b.amount - a.amount)
+}
+
+export function formatDateTime(iso) {
+  if (!iso) return null
+  const d = new Date(iso)
+  const sameYear = d.getFullYear() === new Date().getFullYear()
+  return d.toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  })
+}
+
 export function initials(name) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
@@ -41,6 +71,23 @@ export function getMonths(expenses) {
 
 export function filteredExpenses(expenses, month) {
   return expenses.filter(e => e.date.slice(0, 7) === month)
+}
+
+export function monthlyTotals(expenses, count = 6) {
+  const now = new Date()
+  const months = []
+  for (let i = count - 1; i >= 0; i--) {
+    months.push(new Date(now.getFullYear(), now.getMonth() - i, 1))
+  }
+  const sums = {}
+  expenses.forEach(e => {
+    const m = e.date.slice(0, 7)
+    sums[m] = (sums[m] || 0) + e.amount
+  })
+  return months.map(d => {
+    const key = d.toISOString().slice(0, 7)
+    return { month: key, total: sums[key] || 0, label: d.toLocaleString('default', { month:'short' }) }
+  })
 }
 
 export function computeBalances(members, expenses) {

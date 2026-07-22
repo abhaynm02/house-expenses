@@ -5,14 +5,16 @@ import AddTab      from './components/AddTab'
 import HistoryTab  from './components/HistoryTab'
 import SettleTab   from './components/SettleTab'
 import MembersTab  from './components/MembersTab'
+import InsightsTab from './components/InsightsTab'
 import Avatar      from './components/Avatar'
-import { getMonths, filteredExpenses, fmt, today } from './utils'
+import { getMonths, filteredExpenses, fmt, today, formatDateTime } from './utils'
 
 const TABS = [
-  { id:'add',     icon:'ti-plus',            label:'Add'      },
-  { id:'history', icon:'ti-list',            label:'History'  },
-  { id:'settle',  icon:'ti-arrows-exchange', label:'Settle up'},
-  { id:'members', icon:'ti-users',           label:'Members'  },
+  { id:'add',      icon:'ti-plus',            label:'Add'      },
+  { id:'history',  icon:'ti-list',            label:'History'  },
+  { id:'insights', icon:'ti-chart-donut',     label:'Insights' },
+  { id:'settle',   icon:'ti-arrows-exchange', label:'Settle up'},
+  { id:'members',  icon:'ti-users',           label:'Members'  },
 ]
 
 const Spinner = ({ text }) => (
@@ -87,6 +89,13 @@ export default function App() {
     members.find(m => m.email === session?.user?.email),
   [members, session])
   const isAdmin = currentMember?.is_admin === true
+
+  const lastAddedByMe = useMemo(() => {
+    if (!session) return null
+    const mine = expenses.filter(e => e.created_by === session.user.id)
+    if (!mine.length) return null
+    return mine.reduce((a, b) => new Date(a.created_at) > new Date(b.created_at) ? a : b)
+  }, [expenses, session])
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const months  = useMemo(() => getMonths(expenses), [expenses])
@@ -184,6 +193,12 @@ export default function App() {
               </span>
             )}
           </p>
+          {currentMember && (
+            <p style={{ fontSize:11, color:'var(--text3)', marginTop:3, display:'flex', alignItems:'center', gap:4 }}>
+              <i className="ti ti-clock" />
+              {lastAddedByMe ? <>Last added on {formatDateTime(lastAddedByMe.created_at)}</> : 'No expenses added yet'}
+            </p>
+          )}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:5 }}>
@@ -242,12 +257,13 @@ export default function App() {
       </div>
 
       {/* Tab content */}
-      {tab === 'add'     && <AddTab     members={memberNames} onAdd={addExpense} />}
-      {tab === 'history' && <HistoryTab members={memberNames} expenses={visible}
-                              onDelete={deleteExpense} onSettle={settleExpense} isAdmin={isAdmin} />}
-      {tab === 'settle'  && <SettleTab  members={memberNames} expenses={visible} />}
-      {tab === 'members' && <MembersTab members={members} expenses={expenses}
-                              isAdmin={isAdmin} onAdd={addMember} onRemove={removeMember} />}
+      {tab === 'add'      && <AddTab      members={memberNames} onAdd={addExpense} />}
+      {tab === 'history'  && <HistoryTab  members={memberNames} expenses={visible} month={month}
+                               onDelete={deleteExpense} onSettle={settleExpense} isAdmin={isAdmin} />}
+      {tab === 'insights' && <InsightsTab monthExpenses={visible} allExpenses={expenses} />}
+      {tab === 'settle'   && <SettleTab   members={memberNames} expenses={visible} />}
+      {tab === 'members'  && <MembersTab  members={members} expenses={expenses}
+                               isAdmin={isAdmin} onAdd={addMember} onRemove={removeMember} />}
 
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
